@@ -35,7 +35,7 @@
       top: 0;
       z-index: 10;
     }
-    select, input[type="text"], button {
+    select, input[type="text"], input[type="date"], button {
       padding: 0.6rem;
       font-size: 1rem;
       border: 1px solid #ccc;
@@ -95,6 +95,7 @@
     </select>
 
     <input type="text" id="busqueda" placeholder="Escribe lo que deseas buscar...">
+    <input type="date" id="fecha" placeholder="fecha desde">
     <button onclick="buscarArticulos()">Buscar</button>
   </div>
 
@@ -107,6 +108,7 @@
       const revista = document.getElementById("revista").value;
       const tipo = document.getElementById("tipoBusqueda").value;
       const texto = document.getElementById("busqueda").value.trim();
+      const fecha = document.getElementById("fecha").value;
       const resultados = document.getElementById("resultados");
 
       if (!texto) {
@@ -116,7 +118,7 @@
 
       resultados.innerHTML = `<p>Buscando artículos reales de <strong>${revista}</strong> relacionados con <strong>${tipo}: '${texto}'</strong>...</p>`;
 
-      const query = `site:${revista}.com ${texto}`;
+      const query = `site:${revista}.com ${texto}${fecha ?'after:' + fecha : ''} `;
 
       try {
         const response = await fetch("https://google.serper.dev/search", {

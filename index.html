@@ -4,18 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Buscador de Artículos</title>
+  <title>Article Finder</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-    }
-    body {
-      margin: 0;
-      background: #f9f9f9;
-      color: #333;
-    }
+    * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { margin: 0; background: #f9f9f9; color: #333; }
     header {
       background-color: #1a1a1a;
       color: #fff;
@@ -49,76 +42,93 @@
       border: none;
       transition: background 0.3s;
     }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .results {
-      padding: 2rem;
-      display: grid;
-      gap: 1.5rem;
-    }
+    button:hover { background-color: #0056b3; }
+    .results { padding: 2rem; display: grid; gap: 1.5rem; }
     .article {
       background: white;
       padding: 1rem 1.5rem;
       border-radius: 10px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    .article h3 {
-      margin: 0 0 0.5rem;
-    }
-    .article p {
-      margin: 0.2rem 0;
-    }
-    .article a {
-      text-decoration: none;
-      color: #007bff;
-    }
-    .article a:hover {
-      text-decoration: underline;
-    }
+    .article h3 { margin: 0 0 0.5rem; }
+    .article p { margin: 0.2rem 0; }
+    .article a { text-decoration: none; color: #007bff; }
+    .article a:hover { text-decoration: underline; }
+    .sensitive { color: red; font-weight: bold; }
   </style>
 </head>
 <body>
-  <header>Buscador de Artículos - FastCompany & INC</header>
+  <header id="header-title">Article Finder - FastCompany & INC</header>
 
   <div class="search-bar">
-    <select id="revista">
+    <label for="language">🌐</label>
+    <select id="language" onchange="changeLanguage()">
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
+
+    <select id="source">
       <option value="fastcompany">FastCompany</option>
       <option value="inc">INC</option>
     </select>
 
-    <select id="tipoBusqueda">
-      <option value="subchannel">Subchannel</option>
-      <option value="canal">Canal</option>
-      <option value="tag">Tag</option>
-      <option value="categoria">Categoría</option>
+    <select id="filterType">
+      <option value="tags">Tags</option>
+      <option value="schn">Subchannel</option>
+      <option value="chn">Channel</option>
+      <option value="cat">Category</option>
     </select>
 
-    <input type="text" id="busqueda" placeholder="Escribe lo que deseas buscar...">
-    <input type="date" id="fecha" placeholder="Fecha desde">
-    <button onclick="buscarArticulos()">Buscar</button>
+    <input type="text" id="queryInput" placeholder="Enter value to search">
+    <input type="date" id="fromDate" placeholder="From date">
+    <button onclick="searchArticles()" id="searchBtn">Search</button>
   </div>
 
-  <div class="results" id="resultados">
-    <!-- Resultados aparecerán aquí -->
-  </div>
+  <div class="results" id="results"></div>
 
   <script>
-    async function buscarArticulos() {
-      const revista = document.getElementById("revista").value;
-      const tipo = document.getElementById("tipoBusqueda").value;
-      const texto = document.getElementById("busqueda").value.trim();
-      const fecha = document.getElementById("fecha").value;
-      const resultados = document.getElementById("resultados");
+    const sensitiveKeywords = ["explicit", "violence", "mature", "NSFW", "sexual", "graphic"];
 
-      if (!texto) {
-        resultados.innerHTML = `<p>Por favor, escribe algo para buscar.</p>`;
+    function changeLanguage() {
+      const lang = document.getElementById('language').value;
+      const elements = {
+        'header-title': {
+          en: "Article Finder - FastCompany & INC",
+          es: "Buscador de Artículos - FastCompany & INC"
+        },
+        'queryInput': {
+          en: "Enter value to search",
+          es: "Escribe lo que deseas buscar"
+        },
+        'searchBtn': {
+          en: "Search",
+          es: "Buscar"
+        }
+      };
+      for (let id in elements) {
+        const el = document.getElementById(id);
+        if (el) {
+          if (id === 'queryInput') el.placeholder = elements[id][lang];
+          else el.innerText = elements[id][lang];
+        }
+      }
+    }
+
+    async function searchArticles() {
+      const source = document.getElementById("source").value;
+      const filter = document.getElementById("filterType").value;
+      const query = document.getElementById("queryInput").value.trim();
+      const fromDate = document.getElementById("fromDate").value;
+      const results = document.getElementById("results");
+
+      if (!query) {
+        results.innerHTML = `<p>Please enter something to search.</p>`;
         return;
       }
 
-      resultados.innerHTML = `<p>Buscando artículos reales de <strong>${revista}</strong> relacionados con <strong>${tipo}: '${texto}'</strong>...</p>`;
+      results.innerHTML = `<p>Searching articles from <strong>${source}</strong> with filter <strong>${filter}:${query}</strong>...</p>`;
 
-      const query = `site:${revista}.com ${texto} ${fecha ? 'after:' + fecha : ''}`;
+      const googleQuery = `site:${source}.com ${filter}:${query} ${fromDate ? 'after:' + fromDate : ''}`;
 
       try {
         const response = await fetch("https://google.serper.dev/search", {
@@ -127,25 +137,29 @@
             "Content-Type": "application/json",
             "X-API-KEY": "f58a2ac6291cefc98a6609ac8546cc8212dce92c"
           },
-          body: JSON.stringify({ q: query })
+          body: JSON.stringify({ q: googleQuery })
         });
 
         const data = await response.json();
         if (!data.organic || data.organic.length === 0) {
-          resultados.innerHTML = `<p>No se encontraron artículos.</p>`;
+          results.innerHTML = `<p>No articles found.</p>`;
           return;
         }
 
-        resultados.innerHTML = data.organic.map(item => `
-          <div class="article">
-            <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
-            <p>${item.snippet || ''}</p>
-            <p><small>${item.link}</small></p>
-          </div>
-        `).join("");
+        results.innerHTML = data.organic.map(item => {
+          const isSensitive = sensitiveKeywords.some(word => (item.title + item.snippet).toLowerCase().includes(word));
+          return `
+            <div class="article">
+              <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
+              <p>${item.snippet || ''}</p>
+              <p><small>${item.link}</small></p>
+              ${isSensitive ? '<p class="sensitive">⚠️ Sensitive content (auto-detected)</p>' : ''}
+            </div>
+          `;
+        }).join("");
       } catch (error) {
-        console.error("Error al buscar artículos:", error);
-        resultados.innerHTML = `<p>Error al buscar artículos. Intenta de nuevo más tarde.</p>`;
+        console.error("Error:", error);
+        results.innerHTML = `<p>Error fetching articles.</p>`;
       }
     }
   </script>
